@@ -1,0 +1,26 @@
+# Xmake cache
+.xmake/
+build/
+
+# Compile commands
+compile_commands.json
+
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Build artifacts
+*.o
+*.a
+*.so
+*.dylib
+*.exe
+motd
+
+# Temporary files
+*.log
+*.tmp
