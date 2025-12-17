@@ -42,20 +42,11 @@ private:
     std::string gtk;
     std::vector<std::string> gpus;
     std::vector<std::string> disks;
-    std::string cpuFreq;
     std::string loadAvg;
 
     std::string getEnv(const char* name) {
         const char* val = std::getenv(name);
         return val ? val : "";
-    }
-
-    std::string readFile(const std::string& path) {
-        std::ifstream file(path);
-        if (!file.is_open()) return "";
-        std::stringstream buffer;
-        buffer << file.rdbuf();
-        return buffer.str();
     }
 
     std::string readFirstLine(const std::string& path) {
@@ -141,16 +132,18 @@ private:
             }
         }
 #elif defined(__OpenBSD__)
-        std::string dmesg = readFile("/var/run/dmesg.boot");
-        if (!dmesg.empty()) {
-            size_t pos = dmesg.find("OpenBSD");
-            if (pos != std::string::npos) {
-                size_t end = dmesg.find('\n', pos);
-                os = dmesg.substr(pos, end - pos);
-                // Extract just "OpenBSD X.X"
-                size_t space = os.find(' ', 8);
-                if (space != std::string::npos) {
-                    os = os.substr(0, space);
+        std::ifstream dmesgFile("/var/run/dmesg.boot");
+        if (dmesgFile.is_open()) {
+            std::string line;
+            while (std::getline(dmesgFile, line)) {
+                if (line.find("OpenBSD") == 0) {
+                    size_t space = line.find(' ', 8);
+                    if (space != std::string::npos) {
+                        os = line.substr(0, space);
+                    } else {
+                        os = line;
+                    }
+                    break;
                 }
             }
         }
@@ -692,12 +685,7 @@ public:
         detectTerminal();
         detectModel();
         detectGTK();
-        
-        // Only detect GPU if not disabled (lspci adds ~40ms overhead)
-        if (getEnv("MOTD_NO_GPU").empty()) {
-            detectGPU();
-        }
-        
+        detectGPU();
         detectLoadAvg();
         detectDisks();
     }
