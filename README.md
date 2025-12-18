@@ -1,14 +1,6 @@
 # motd
 
-A lightweight system information fetch tool written in C++, designed for BSD (especially OpenBSD) and Linux systems.
-
-## Features
-
-- **Cross-platform**: Works on Linux and OpenBSD
-- **Detailed memory info**: Shows used/total with percentage, plus swap usage
-- **Full color palette**: Displays all 8 ANSI colors
-- **System information**: OS, kernel, shell, WM/DE, uptime, CPU, packages, terminal, and more
-- **Zero dependencies**: Uses only standard C++ and system calls
+A lightweight system information fetch tool written in C++, designed for BSD (especially OpenBSD) alongside Gentoo Linux, and Alpine Linux.
 
 ## Building
 
