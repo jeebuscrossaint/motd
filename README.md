@@ -16,24 +16,8 @@ This project uses [xmake](https://xmake.io/) as the build system.
 
 ### Prerequisites
 
-- C++17 compatible compiler (g++, clang++)
+- C++ compiler (g++, clang++)
 - xmake
-
-### Install xmake
-
-```sh
-# On Linux
-curl -fsSL https://xmake.io/shget.text | bash
-
-# On OpenBSD
-pkg_add xmake
-```
-
-### Build
-
-```sh
-xmake
-```
 
 ### Build for release (optimized, stripped)
 
@@ -67,28 +51,7 @@ motd
 ```
 
 Example output:
-```
-amarnath@enlightenment
-
-      os ~ Gentoo Linux
-      sh ~ fish
-      wm ~ mango
-      up ~ 4h 37m
-     gtk ~ adw-gtk3
-     box ~ ROG Zephyrus G16 GU605MI_GU605MI
-     cpu ~ Intel(R) Core(TM) Ultra 9 185H (22) @ 5.10 GHz
-     gpu ~ Intel Corporation Meteor Lake-P [Intel Arc Graphics]
-     gpu ~ NVIDIA Corporation AD106M [GeForce RTX 4070 Max-Q / Mobile]
-     mem ~ 8352MB / 15380MB (54%)
-    swap ~ 735MB / 15379MB (4%)
-    disk ~ /: 203.86 GiB / 322.86 GiB (63%) - ext4
-    load ~ 2.50, 2.84, 3.33
-    kern ~ 6.18.1
-    pkgs ~ 1189 (emerge)
-    term ~ kitty
-
-  ▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅
-```
+![Screenshot](screenshot.png)
 
 ### Shell Integration
 
@@ -100,32 +63,8 @@ motd
 
 ## Supported Systems
 
-- **Linux**: Full support with detailed memory/swap info
-- **OpenBSD**: Full support (some features simplified due to platform differences)
-- **Other BSDs**: Should work with minimal modifications
-
-## Detected Information
-
-- **OS/Distro**: From `/etc/os-release` or system calls
-- **Kernel**: Version from `uname`
-- **Shell**: From `$SHELL` environment variable
-- **WM/DE**: From environment variables or process scanning
-- **Uptime**: System uptime in days, hours, minutes
-- **Memory**: Used/Total in MB with percentage
-- **Swap**: Used/Total in MB with percentage (if available)
-- **CPU**: Processor model
-- **Model**: System/motherboard model (Linux only)
-- **Packages**: Count from package manager databases
-- **Terminal**: Detected from process tree
+Supports Gentoo Linux, Alpine Linux, and OpenBSD.
 
 ## License
 
 BSD 3-Clause License - See LICENSE file for details
-
-## Contributing
-
-Contributions welcome! This project aims to be:
-- Minimal and fast
-- Cross-platform (BSD/Linux focus)
-- Zero external dependencies
-- Easy to build and deploy

@@ -15,7 +15,9 @@
 
 #ifdef __linux__
 #include <sys/sysinfo.h>
+#ifdef HAS_LIBPCI
 #include <pci/pci.h>
+#endif
 #endif
 
 #ifdef __OpenBSD__
@@ -619,6 +621,7 @@ private:
 
     void detectGPU() {
 #ifdef __linux__
+#ifdef HAS_LIBPCI
         // Use libpci directly for fast GPU detection
         struct pci_access *pacc = pci_alloc();
         if (pacc) {
@@ -642,6 +645,20 @@ private:
             
             pci_cleanup(pacc);
         }
+#else
+        // Fallback: use lspci command if libpci not available
+        FILE* pipe = popen("lspci 2>/dev/null | grep -E 'VGA|3D|Display' | cut -d: -f3", "r");
+        if (pipe) {
+            char buffer[512];
+            while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
+                std::string gpu = trim(buffer);
+                if (!gpu.empty()) {
+                    gpus.push_back(gpu);
+                }
+            }
+            pclose(pipe);
+        }
+#endif
 #elif defined(__OpenBSD__)
         // On OpenBSD, parse dmesg output for GPU info
         FILE* pipe = popen("dmesg 2>/dev/null | grep -E 'vga|radeon|intel|nvidia' | head -5", "r");
