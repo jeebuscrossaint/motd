@@ -448,18 +448,19 @@ private:
             packages = std::to_string(gentooCount) + " (emerge)";
         }
         
-        // Alpine Linux - count apk packages
+        // Alpine Linux - count apk packages from installed database
         if (packages.empty()) {
             int apkCount = 0;
-            DIR* apkDir = opendir("/lib/apk/db/installed");
-            if (apkDir) {
-                struct dirent* entry;
-                while ((entry = readdir(apkDir)) != nullptr) {
-                    if (entry->d_name[0] != '.' && entry->d_type == DT_REG) {
+            std::ifstream apkFile("/lib/apk/db/installed");
+            if (apkFile.is_open()) {
+                std::string line;
+                while (std::getline(apkFile, line)) {
+                    // Each package entry starts with "P:" (package name)
+                    if (line.find("P:") == 0) {
                         apkCount++;
                     }
                 }
-                closedir(apkDir);
+                apkFile.close();
                 
                 if (apkCount > 0) {
                     packages = std::to_string(apkCount) + " (apk)";
