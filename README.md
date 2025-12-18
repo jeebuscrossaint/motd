@@ -68,49 +68,26 @@ motd
 
 Example output:
 ```
-       user@hostname
+amarnath@enlightenment
 
       os ~ Gentoo Linux
-  kernel ~ 6.6.47
-   shell ~ zsh
-      wm ~ sway
-  uptime ~ 2d 5h 32m
-  memory ~ 8192MB / 16384MB (50%)
-    swap ~ 1024MB / 4096MB (25%)
-     cpu ~ AMD Ryzen 9 5900X
-   model ~ X570 AORUS MASTER
-    pkgs ~ 1247
-    term ~ foot
+      sh ~ fish
+      wm ~ mango
+      up ~ 4h 37m
+     gtk ~ adw-gtk3
+     box ~ ROG Zephyrus G16 GU605MI_GU605MI
+     cpu ~ Intel(R) Core(TM) Ultra 9 185H (22) @ 5.10 GHz
+     gpu ~ Intel Corporation Meteor Lake-P [Intel Arc Graphics]
+     gpu ~ NVIDIA Corporation AD106M [GeForce RTX 4070 Max-Q / Mobile]
+     mem ~ 8352MB / 15380MB (54%)
+    swap ~ 735MB / 15379MB (4%)
+    disk ~ /: 203.86 GiB / 322.86 GiB (63%) - ext4
+    load ~ 2.50, 2.84, 3.33
+    kern ~ 6.18.1
+    pkgs ~ 1189 (emerge)
+    term ~ kitty
 
-  ▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅
-```
-
-## Integration
-
-### Home Manager (Nix)
-
-Add to your `home.nix`:
-
-```nix
-home.packages = [
-  (pkgs.stdenv.mkDerivation {
-    pname = "motd";
-    version = "0.1.0";
-    src = /path/to/motd;
-    
-    nativeBuildInputs = [ pkgs.xmake ];
-    
-    buildPhase = ''
-      xmake f -m release
-      xmake
-    '';
-    
-    installPhase = ''
-      mkdir -p $out/bin
-      cp build/*/release/motd $out/bin/
-    '';
-  })
-];
+  ▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅
 ```
 
 ### Shell Integration
