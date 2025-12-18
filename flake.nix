@@ -34,8 +34,13 @@
           ];
 
           buildPhase = ''
-            xmake f -m release -p linux
-            xmake build
+            # Ensure xmake can find pci headers
+            export C_INCLUDE_PATH="${pkgs.pciutils}/include:$C_INCLUDE_PATH"
+            export CPLUS_INCLUDE_PATH="${pkgs.pciutils}/include:$CPLUS_INCLUDE_PATH"
+            export LIBRARY_PATH="${pkgs.pciutils}/lib:$LIBRARY_PATH"
+
+            xmake f -m release -p linux -y
+            xmake
           '';
 
           installPhase = ''

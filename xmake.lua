@@ -16,18 +16,12 @@ target("motd")
 
     if is_plat("linux") then
         add_syslinks("pthread")
-        -- Try to find libpci, but make it optional
-        if os.exists("/usr/include/pci/pci.h") or os.exists("/usr/local/include/pci/pci.h") then
-            add_syslinks("pci")
-            add_defines("HAS_LIBPCI")
-        end
+        add_syslinks("pci")
+        add_defines("HAS_LIBPCI")
     elseif is_plat("bsd") then
         add_syslinks("kvm")
-        -- OpenBSD has libpci
-        if os.exists("/usr/local/include/pci/pci.h") then
-            add_syslinks("pci")
-            add_defines("HAS_LIBPCI")
-        end
+        add_syslinks("pci")
+        add_defines("HAS_LIBPCI")
     end
 
     set_warnings("all")

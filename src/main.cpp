@@ -359,8 +359,9 @@ private:
             file.close();
         }
         
-        // Get max CPU frequency - check all cores (for P-cores and E-cores)
-        for (int i = 0; i < 100; i++) {
+        // Get max CPU frequency - check only up to actual core count + 2 for efficiency
+        int maxCheck = coreCount > 0 ? coreCount + 2 : 32;
+        for (int i = 0; i < maxCheck; i++) {
             std::string freqPath = "/sys/devices/system/cpu/cpu" + std::to_string(i) + "/cpufreq/cpuinfo_max_freq";
             std::ifstream freqFile(freqPath);
             if (freqFile.is_open()) {
@@ -372,8 +373,7 @@ private:
                         maxFreq = freq;
                     }
                 }
-            } else if (i > coreCount) {
-                break; // No more CPUs to check
+                freqFile.close();
             }
         }
         
