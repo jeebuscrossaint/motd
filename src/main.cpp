@@ -468,6 +468,27 @@ private:
             }
         }
         
+        // Debian/Ubuntu - count dpkg packages
+        if (packages.empty()) {
+            int dpkgCount = 0;
+            DIR* dpkgDir = opendir("/var/lib/dpkg/info");
+            if (dpkgDir) {
+                struct dirent* entry;
+                while ((entry = readdir(dpkgDir)) != nullptr) {
+                    std::string name = entry->d_name;
+                    // Count .list files (one per installed package)
+                    if (name.length() > 5 && name.substr(name.length() - 5) == ".list") {
+                        dpkgCount++;
+                    }
+                }
+                closedir(dpkgDir);
+                
+                if (dpkgCount > 0) {
+                    packages = std::to_string(dpkgCount) + " (dpkg)";
+                }
+            }
+        }
+        
         if (packages.empty()) {
             packages = "0";
         }
