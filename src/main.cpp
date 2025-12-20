@@ -606,8 +606,8 @@ private:
                     struct statvfs stat;
                     if (statvfs(mountpoint.c_str(), &stat) == 0) {
                         unsigned long long total = (unsigned long long)stat.f_blocks * stat.f_frsize;
-                        unsigned long long avail = (unsigned long long)stat.f_bavail * stat.f_frsize;
-                        unsigned long long used = total - avail;
+                        unsigned long long free = (unsigned long long)stat.f_bfree * stat.f_frsize;
+                        unsigned long long used = total - free;
                         
                         if (total > 0) {
                             int percent = (used * 100) / total;
