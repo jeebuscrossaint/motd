@@ -5,6 +5,7 @@
 #include <sstream>
 #include <set>
 #include <iomanip>
+#include <algorithm>
 #include <unistd.h>
 #include <sys/utsname.h>
 #include <sys/stat.h>
@@ -351,32 +352,154 @@ void SystemInfo::detectCPU() {
 #endif
 }
 
-void SystemInfo::detectPackages() {
 #ifdef __linux__
-    int gentooCount = 0;
-    DIR* d = opendir("/var/db/pkg");
-    if (d) {
-        struct dirent* category;
-        while ((category = readdir(d)) != nullptr) {
-            if (category->d_name[0] == '.') continue;
-            
-            std::string categoryPath = std::string("/var/db/pkg/") + category->d_name;
-            struct stat st;
-            if (stat(categoryPath.c_str(), &st) == 0 && S_ISDIR(st.st_mode)) {
-                DIR* catDir = opendir(categoryPath.c_str());
-                if (catDir) {
-                    struct dirent* pkg;
-                    while ((pkg = readdir(catDir)) != nullptr) {
-                        if (pkg->d_name[0] != '.') gentooCount++;
-                    }
-                    closedir(catDir);
-                }
+// Helper function to get cached Nix package count
+static int getNixPackagesCached(const char* profilePath) {
+    // Get cache directory
+    const char* home = getenv("HOME");
+    if (!home) return 0;
+    
+    std::string cacheDir = std::string(home) + "/.cache/motd";
+    mkdir(cacheDir.c_str(), 0755);
+    
+    // Create cache filename based on profile path
+    std::string cacheName = profilePath;
+    std::replace(cacheName.begin(), cacheName.end(), '/', '_');
+    std::string cacheFile = cacheDir + "/nix" + cacheName + ".cache";
+    
+    // Get current profile hash
+    std::string hashCmd = "nix-store -q --hash " + std::string(profilePath) + " 2>/dev/null";
+    FILE* hashPipe = popen(hashCmd.c_str(), "r");
+    std::string currentHash;
+    if (hashPipe) {
+        char buffer[128];
+        if (fgets(buffer, sizeof(buffer), hashPipe) != nullptr) {
+            currentHash = buffer;
+            if (!currentHash.empty() && currentHash.back() == '\n') {
+                currentHash.pop_back();
             }
         }
-        closedir(d);
+        pclose(hashPipe);
     }
-    if (gentooCount > 0) {
-        packages = std::to_string(gentooCount) + " (emerge)";
+    
+    if (currentHash.empty()) return 0;
+    
+    // Try to read cache
+    std::ifstream cache(cacheFile);
+    if (cache.is_open()) {
+        std::string cachedHash;
+        int cachedCount;
+        if (std::getline(cache, cachedHash) && cache >> cachedCount) {
+            if (cachedHash == currentHash && cachedCount > 0) {
+                cache.close();
+                return cachedCount;
+            }
+        }
+        cache.close();
+    }
+    
+    // Cache miss or invalid - compute count
+    std::string countCmd = 
+        "nix-store -q --requisites " + std::string(profilePath) + " 2>/dev/null | "
+        "grep -v '\\(-doc\\|-man\\|-info\\|-dev\\|-bin\\)$' | "
+        "grep -v 'nixos-system-nixos-' | "
+        "grep -E '[0-9]+\\.[0-9]+' | "
+        "wc -l";
+    
+    FILE* countPipe = popen(countCmd.c_str(), "r");
+    int count = 0;
+    if (countPipe) {
+        char buffer[128];
+        if (fgets(buffer, sizeof(buffer), countPipe) != nullptr) {
+            count = std::atoi(buffer);
+        }
+        pclose(countPipe);
+    }
+    
+    // Write to cache
+    if (count > 0) {
+        std::ofstream cacheOut(cacheFile);
+        if (cacheOut.is_open()) {
+            cacheOut << currentHash << "\n" << count;
+            cacheOut.close();
+        }
+    }
+    
+    return count;
+}
+#endif
+
+void SystemInfo::detectPackages() {
+#ifdef __linux__
+    // NixOS package detection with caching (matching fastfetch's approach)
+    int nixSystemCount = 0;
+    int nixUserCount = 0;
+    bool isNixOS = false;
+    
+    // Check if /run/current-system exists
+    struct stat st;
+    if (stat("/run/current-system", &st) == 0) {
+        nixSystemCount = getNixPackagesCached("/run/current-system");
+        if (nixSystemCount > 0) {
+            isNixOS = true;
+        }
+    }
+    
+    // Check for user packages
+    const char* home = getenv("HOME");
+    if (home) {
+        std::string userProfile = std::string(home) + "/.nix-profile";
+        if (stat(userProfile.c_str(), &st) == 0) {
+            nixUserCount = getNixPackagesCached(userProfile.c_str());
+            if (nixUserCount > 0) {
+                isNixOS = true;
+            }
+        }
+    }
+    
+    // Count Flatpak packages (system and user)
+    int flatpakCount = 0;
+    
+    // System flatpak
+    DIR* flatpakSystemDir = opendir("/var/lib/flatpak/app");
+    if (flatpakSystemDir) {
+        struct dirent* entry;
+        while ((entry = readdir(flatpakSystemDir)) != nullptr) {
+            if (entry->d_type == DT_DIR && entry->d_name[0] != '.') {
+                flatpakCount++;
+            }
+        }
+        closedir(flatpakSystemDir);
+    }
+    
+    // User flatpak
+    if (home) {
+        std::string userFlatpak = std::string(home) + "/.local/share/flatpak/app";
+        DIR* flatpakUserDir = opendir(userFlatpak.c_str());
+        if (flatpakUserDir) {
+            struct dirent* entry;
+            while ((entry = readdir(flatpakUserDir)) != nullptr) {
+                if (entry->d_type == DT_DIR && entry->d_name[0] != '.') {
+                    flatpakCount++;
+                }
+            }
+            closedir(flatpakUserDir);
+        }
+    }
+    
+    if (isNixOS) {
+        if (nixSystemCount > 0 && nixUserCount > 0) {
+            packages = std::to_string(nixSystemCount) + " (nix-system), " + 
+                      std::to_string(nixUserCount) + " (nix-user)";
+        } else if (nixSystemCount > 0) {
+            packages = std::to_string(nixSystemCount) + " (nix-system)";
+        } else {
+            packages = std::to_string(nixUserCount) + " (nix-user)";
+        }
+        
+        if (flatpakCount > 0) {
+            packages += ", " + std::to_string(flatpakCount) + " (flatpak)";
+        }
     }
     
     if (packages.empty()) {
@@ -417,26 +540,11 @@ void SystemInfo::detectPackages() {
     }
     
     if (packages.empty()) {
-        int xbpsCount = 0;
-        DIR* xbpsDir = opendir("/var/db/xbps");
-        if (xbpsDir) {
-            struct dirent* entry;
-            while ((entry = readdir(xbpsDir)) != nullptr) {
-                std::string name = entry->d_name;
-                if (name.length() > 6 && name.substr(name.length() - 6) == ".plist") {
-                    xbpsCount++;
-                }
-            }
-            closedir(xbpsDir);
-            
-            if (xbpsCount > 0) {
-                packages = std::to_string(xbpsCount) + " (xbps)";
-            }
+        if (flatpakCount > 0) {
+            packages = std::to_string(flatpakCount) + " (flatpak)";
+        } else {
+            packages = "0";
         }
-    }
-    
-    if (packages.empty()) {
-        packages = "0";
     }
 #elif defined(__OpenBSD__)
     int obsdCount = 0;
